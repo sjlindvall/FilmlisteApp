@@ -1,0 +1,164 @@
+@page "/filmer"
+@using FilmListeApp.Models
+@inject FilmListeApp.Data.FilmDbContext Db
+
+<h3>Filmliste</h3>
+
+<div style="display:flex; gap:16px; flex-wrap:wrap;">
+    <div style="min-width:360px; flex:1;">
+        <h4>Alle filmer</h4>
+
+        @if (filmer is null)
+        {
+            <p>Laster...</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tittel</th>
+                        <th>Sjanger</th>
+                        <th>Utgitt</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in filmer)
+                    {
+                        <tr>
+                            <td>@f.Id</td>
+                            <td>@f.Tittel</td>
+                            <td>@f.Sjanger</td>
+                            <td>@f.Utgitt</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" @onclick="() => Edit(f)">Edit</button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => Delete(f.Id)">Slett</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div style="min-width:360px; flex:1;">
+        <h4>@(editing.Id == 0 ? "Ny film" : $"Edit film #{editing.Id}")</h4>
+
+        <div class="mb-2">
+            <label>Tittel</label>
+            <input class="form-control" @bind="editing.Tittel" />
+        </div>
+
+        <div class="mb-2">
+            <label>Sjanger</label>
+            <input class="form-control" @bind="editing.Sjanger" />
+        </div>
+
+        <div class="mb-2">
+            <label>Utgitt</label>
+            <input class="form-control" type="number" @bind="editing.Utgitt" />
+        </div>
+
+        <div class="mb-2">
+            <label>Beskrivelse</label>
+            <textarea class="form-control" rows="5" @bind="editing.Beskrivelse"></textarea>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-success" @onclick="Save">Lagre</button>
+            <button class="btn btn-secondary" @onclick="New">Ny</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(status))
+        {
+            <p class="mt-2">@status</p>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Film>? filmer;
+    private Film editing = new();
+    private string? status;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        filmer = await Db.Filmliste
+            .OrderBy(f => f.Id)
+            .ToListAsync();
+    }
+
+    private void Edit(Film f)
+    {
+        status = null;
+        // kopier til edit-modell
+        editing = new Film
+        {
+            Id = f.Id,
+            Tittel = f.Tittel,
+            Sjanger = f.Sjanger,
+            Utgitt = f.Utgitt,
+            Beskrivelse = f.Beskrivelse
+        };
+    }
+
+    private void New()
+    {
+        status = null;
+        editing = new Film();
+    }
+
+    private async Task Save()
+    {
+        status = null;
+
+        if (string.IsNullOrWhiteSpace(editing.Tittel))
+        {
+            status = "Tittel kan ikke være tom.";
+            return;
+        }
+
+        if (editing.Id == 0)
+        {
+            Db.Filmliste.Add(editing);
+        }
+        else
+        {
+            var existing = await Db.Filmliste.FindAsync(editing.Id);
+            if (existing is null)
+            {
+                status = "Fant ikke filmen i databasen.";
+                return;
+            }
+
+            existing.Tittel = editing.Tittel;
+            existing.Sjanger = editing.Sjanger;
+            existing.Utgitt = editing.Utgitt;
+            existing.Beskrivelse = editing.Beskrivelse;
+        }
+
+        await Db.SaveChangesAsync();
+        await Load();
+        New();
+        status = "Lagret.";
+    }
+
+    private async Task Delete(int id)
+    {
+        status = null;
+        var existing = await Db.Filmliste.FindAsync(id);
+        if (existing is null) return;
+
+        Db.Filmliste.Remove(existing);
+        await Db.SaveChangesAsync();
+        await Load();
+        status = $"Slettet film #{id}.";
+    }
+}
