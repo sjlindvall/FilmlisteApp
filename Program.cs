@@ -1,4 +1,4 @@
-using FilmListeApp.Data;
+using FilmlisteApp.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

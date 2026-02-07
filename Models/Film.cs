@@ -1,4 +1,4 @@
-namespace FilmListeApp.Models;
+namespace FilmlisteApp.Models;
 
 public class Film
 {

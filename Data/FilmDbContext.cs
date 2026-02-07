@@ -1,7 +1,7 @@
-using FilmListeApp.Models;
+using FilmlisteApp.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace FilmListeApp.Data;
+namespace FilmlisteApp.Data;
 
 public class FilmDbContext : DbContext
 {
